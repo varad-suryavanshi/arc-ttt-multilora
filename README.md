@@ -242,9 +242,8 @@ This clarifies:
 
 ---
 
-## 8. Results (Example)
+## 8. Results
 
-The numbers here are illustrative but consistent with our experiments.
 
 ### 8.1. Throughput & Efficiency (Per Task, ARC TTT)
 
@@ -263,7 +262,6 @@ Observed trends:
 * **GPU utilization** improves from ~30–40% to ~70–80% on A100-80GB.
 * **Accuracy** on held-out ARC tests remains within ~1–2% of single-task LoRA TTT.
 
-(Exact tables/plots are in the slides/report; you can extend this repo with evaluation scripts in `results/`.)
 
 ---
 
