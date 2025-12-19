@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual envs
+.env/
+.venv/
+venv/
+env/
+
+# Data & models (keep only README)
+data/*
+!data/README.md
+
+models/*
+!models/README.md
+
+results/*
+!results/README.md
+results/tables/*
+results/plots/*
+
+# Checkpoints / cache
+checkpoints/
+outputs/
+*.ckpt
+*.pt
+*.bin
+
+# VSCode / IDE
+.vscode/
+.idea/
