@@ -1,4 +1,4 @@
-````markdown
+
 # ARC Test-Time Training with Multi-LoRA
 
 This repository contains an experimental **test-time training (TTT)** pipeline for the **ARC (Abstraction and Reasoning Corpus)** using a **single base LLM** (e.g., Qwen2-7B) and **many low-rank adapters (LoRA)** trained **in parallel**.
