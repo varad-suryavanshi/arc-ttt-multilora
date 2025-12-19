@@ -11,7 +11,7 @@ __pycache__/
 venv/
 env/
 
-# Data & models (keep only README)
+# Data & models 
 data/*
 !data/README.md
 
