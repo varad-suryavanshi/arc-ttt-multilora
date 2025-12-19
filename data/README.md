@@ -1,4 +1,4 @@
-````markdown
+
 # Data Layout for ARC TTT + Multi-LoRA
 
 This folder contains the **ARC (Abstraction and Reasoning Corpus)** tasks used for
