@@ -201,8 +201,5 @@ In short:
 * The scripts will handle 4-bit loading, tokenization, and Multi-LoRA training
   on ARC problems.
 
-```
 
-::contentReference[oaicite:0]{index=0}
-```
 
