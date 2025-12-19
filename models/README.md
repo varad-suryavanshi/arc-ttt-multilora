@@ -1,4 +1,4 @@
-````markdown
+
 # Models for ARC TTT + Multi-LoRA
 
 This folder stores the **base LLM checkpoints** used for test-time training (TTT)
