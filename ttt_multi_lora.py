@@ -115,41 +115,7 @@ def grid_to_str(grid):
     )
 
 
-# def make_prompt_and_answer(task):
-#     sys_msg = """----- Role: system --------------------
-# You are a world-class puzzle solver with exceptional pattern recognition
-# skills. Your task is to analyze puzzles, spot patterns, and provide direct
-# solutions. You are kind of a local solver - your strength is in finding local patterns and local subproblems to solve the puzzels.
-# """
-#     user_msg = """----- Role: user --------------------
-# Given input-output grid pairs as reference examples, carefully observe the
-# patterns to predict the output grid for new test input. Each pair follows
-# the same transformation rule. Grids are 2D arrays represented as strings,
-# with cells (colors) separated by spaces and rows by newlines.
-# There must be local subproblems in input, which might have one-to-one relation in output.
-# Solve these local problems one by one and then predict the output grid of test input.
-# Here are the input and output grids for the reference examples:
-# """
 
-#     for i, ex in enumerate(task['train'], 1):
-#         user_msg += f"\nExample {i}\nInput:\n{grid_to_str(ex['input'])}\n"
-#         user_msg += f"Output:\n{grid_to_str(ex['output'])}\n"
-
-#     ti = task['test'][0]['input']
-#     user_msg += f"""Here is the input grid for the test example:
-# Input:
-# {grid_to_str(ti)}
-# Directly provide the output grid(s) corresponding to the given test input
-# grids, based on the patterns observed in the reference examples.
-# """
-
-#     prompt = sys_msg + "\n" + user_msg
-
-#     to = task['test'][0]['output']
-#     answer = "----- Role: assistant ----\nThe output is:\n```\n"
-#     answer += grid_to_str(to) + "\n```"
-
-#     return prompt, answer
 
 
 def make_prompt_and_answer(task):
@@ -214,76 +180,8 @@ def tokenize_example(ex, tokenizer, max_len=MAX_CONTEXT):
 
 
 # ============================================================
-# MULTI-LORA MODEL  (Section from Part 2)
+# MULTI-LORA MODEL  
 # ============================================================
-
-# from peft import LoraConfig, LoraModel
-
-# class MultiLoRAModel(nn.Module):
-
-#     def __init__(self, base_model, tokenizer, k=8, r=64, alpha=64):
-#         super().__init__()
-#         self.k = k
-#         self.tokenizer = tokenizer
-        
-#         # Freeze base
-#         self.base = base_model
-#         if hasattr(self.base, "peft_config"):
-#             del self.base.peft_config
-#         for p in self.base.parameters():
-#             p.requires_grad = False
-
-#         # Create K LoRA adapters
-#         self.loras = nn.ModuleList()
-#         for i in range(k):
-#             cfg = LoraConfig(
-#                 r=r,
-#                 lora_alpha=alpha,
-#                 target_modules=["q_proj","k_proj","v_proj","o_proj",
-#                                 "gate_proj","up_proj","down_proj"],
-#                 lora_dropout=0.05,
-#                 bias="none"
-#             )
-            
-#             adapter_name = f"lora_{i}"
-#             lora_model = LoraModel(self.base, cfg, adapter_name=adapter_name)
-#             self.loras.append(lora_model)
-
-#         print(f"Initialized MultiLoRAModel with {k} adapters.")
-
-#     def apply_lora_delta(self, adapter, hidden_states, layer_name):
-#         module = dict(adapter.model.named_modules())[layer_name]
-#         if hasattr(module, "lora_A") and hasattr(module, "lora_B"):
-#             A = module.lora_A.weight
-#             B = module.lora_B.weight
-#             # delta = torch.einsum("bth,rh->btr", hidden_states, A)
-#             # delta = torch.einsum("btr,or->bto", delta, B)
-#             delta = hidden_states @ A.T @ B.T
-#             return delta
-#         else:
-#             return torch.zeros_like(hidden_states)
-
-#     def forward(self, input_ids_list, attention_masks_list):
-#         base_out = self.base.model(
-#             input_ids=input_ids_list[0],
-#             attention_mask=attention_masks_list[0],
-#             output_hidden_states=True,
-#             return_dict=True
-#         )
-#         hidden = base_out.hidden_states[-1]
-        
-#         logits_list = []
-#         for i in range(self.k):
-#             adapter = self.loras[i]
-#             delta = 0
-#             for name in ["q_proj","k_proj","v_proj","o_proj",
-#                          "gate_proj","up_proj","down_proj"]:
-#                 delta += self.apply_lora_delta(adapter, hidden, name)
-#             hidden_i = hidden + delta
-#             logits = self.base.lm_head(hidden_i)
-#             logits_list.append(logits)
-
-#         return logits_list
 
 class MultiLoRAModel(nn.Module):
 
@@ -361,43 +259,7 @@ class MultiLoRAModel(nn.Module):
 
 
 
-# ============================================================
-# DATASET UTILITIES (Multi-LoRA batching)
-# ============================================================
 
-# def pad_to_max_length(tensors, pad_id):
-#     """Pad a list of [T] tensors to same length."""
-#     max_len = max(t.size(0) for t in tensors)
-#     padded = []
-#     masks = []
-
-#     for t in tensors:
-#         pad_len = max_len - t.size(0)
-#         padded_t = torch.cat([t, torch.full((pad_len,), pad_id, dtype=torch.long)], dim=0)
-#         mask = torch.cat([torch.ones_like(t), torch.zeros(pad_len, dtype=torch.long)])
-#         padded.append(padded_t)
-#         # masks.append(mask)
-#         masks.append(mask.unsqueeze(0))
-
-#     return padded, masks
-
-# def pad_to_max_length(tensors, pad_id):
-#     max_len = max(t.size(0) for t in tensors)
-#     padded = []
-#     masks = []
-
-#     for t in tensors:
-#         pad_len = max_len - t.size(0)
-#         padded_t = torch.cat([t, torch.full((pad_len,), pad_id, dtype=torch.long)], dim=0)
-
-#         # mask must be [1, T] for HF SDPA
-#         mask = torch.cat([torch.ones_like(t), torch.zeros(pad_len, dtype=torch.long)], dim=0)
-#         mask = mask.unsqueeze(0)
-
-#         padded.append(padded_t)
-#         masks.append(mask)
-
-#     return padded, masks
 
 def pad_to_max_length(tensors, pad_id, add_batch_dim=False, max_len=MAX_CONTEXT):
     """
@@ -504,14 +366,6 @@ def make_multi_lora_batch(problems, tokenizer, num_pseudo):
 # TRAINING LOOP
 # ============================================================
 
-# def get_lora_parameters(model):
-#     """Return trainable LoRA-only parameters."""
-#     params = []
-#     for adapter in model.loras:
-#         for n, p in adapter.named_parameters():
-#             if p.requires_grad:  # LoRA weights require grad
-#                 params.append(p)
-#     return params
 
 def get_lora_parameters(model):
     """Return trainable low-rank adapter parameters (A & B)."""
@@ -616,72 +470,7 @@ def train_multi_lora(model, tokenizer, problems, num_steps=50,
     return model
 
 
-# ============================================================
-# FULL TOKEN-BY-TOKEN GENERATION WITH LORA
-# ============================================================
 
-# @torch.no_grad()
-# def generate_with_lora(model, tokenizer, problem, adapter_idx,
-#                        max_new_tokens=256, device="cuda"):
-#     """
-#     Perform full autoregressive generation for test input,
-#     applying the chosen LoRA adapter at every step.
-#     """
-
-#     model.eval()
-#     model.to(device)
-
-#     # Build real task prompt
-#     real_task = {
-#         "train": problem["train"],
-#         "test":  [problem["test"][0]]
-#     }
-#     prompt, _ = make_prompt_and_answer(real_task)
-
-#     # Tokenize
-#     inputs = tokenizer(prompt, return_tensors="pt").to(device)
-#     input_ids = inputs["input_ids"]
-#     attn_mask = inputs["attention_mask"]
-
-#     # Autoregressive loop
-#     for _ in range(max_new_tokens):
-
-#         # 1. Forward through base model
-#         base_out = model.base.model(
-#             input_ids=input_ids,
-#             attention_mask=attn_mask,
-#             output_hidden_states=True,
-#             return_dict=True
-#         )
-#         hidden = base_out.hidden_states[-1]
-
-#         # 2. Apply this LoRA adapter only
-#         adapter = model.loras[adapter_idx]
-#         delta = 0
-#         for name in ["q_proj","k_proj","v_proj","o_proj",
-#                      "gate_proj","up_proj","down_proj"]:
-#             delta += model.apply_lora_delta(adapter, hidden, name)
-
-#         hidden_i = hidden + delta
-
-#         # 3. Compute next-token logits
-#         logits = model.base.lm_head(hidden_i)
-#         next_token = torch.argmax(logits[:, -1, :], dim=-1).unsqueeze(0)
-
-#         # 4. Append token
-#         input_ids = torch.cat([input_ids, next_token], dim=1)
-#         new_mask = torch.ones_like(next_token)
-#         attn_mask = torch.cat([attn_mask, new_mask], dim=1)
-
-#         # Stop if EOS is generated
-#         if next_token.item() == tokenizer.eos_token_id:
-#             break
-
-#     completion = tokenizer.decode(
-#         input_ids[0][inputs["input_ids"].size(1):],
-#         skip_special_tokens=True
-#     )
-#     return completion
 
 @torch.no_grad()
 def generate_with_lora(model, tokenizer, problem, adapter_idx,
@@ -729,7 +518,7 @@ def generate_with_lora(model, tokenizer, problem, adapter_idx,
         )
         hidden = base_out.hidden_states[-1]  # [1, T, H], usually fp16
 
-        # 🔥 upcast to adapter dtype (fp32), apply A/B, clamp, then back to hidden.dtype
+        #  upcast to adapter dtype (fp32), apply A/B, clamp, then back to hidden.dtype
         hidden_fp32 = hidden.to(model.adapter_dtype)  # [1, T, H]
         A = model.A[adapter_idx]                      # [H, r] (fp32)
         B = model.B[adapter_idx]                      # [r, H] (fp32)
@@ -908,7 +697,7 @@ def main():
     for group_idx, group in enumerate(groups):
 
         print(f"\n=============================")
-        print(f"🔥 GROUP {group_idx+1}/{len(groups)}: {len(group)} problems")
+        print(f"GROUP {group_idx+1}/{len(groups)}: {len(group)} problems")
         print(f"=============================\n")
 
         # Unzip names & problems
@@ -967,7 +756,7 @@ def main():
 
             print(f"[SAVE] Wrote prediction to {out_path}")
 
-    print("\n🎉 DONE — All ARC problems processed.")
+    print("\n DONE — All ARC problems processed.")
 
 
 if __name__ == "__main__":
