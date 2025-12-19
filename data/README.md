@@ -133,7 +133,5 @@ compatible with the training code.
 
 ---
 
-```
-::contentReference[oaicite:0]{index=0}
-```
+
 
